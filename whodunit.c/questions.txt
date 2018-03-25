@@ -1,0 +1,16 @@
+1.  stdint.h is a header file in the C standard library introduced in the C99 standard library section 7.18 to allow programmers to write more portable code by providing a set of typedefs that specify exact-width integer types, together with the defined minimum and maximum allowable values for each type, using macros
+2.  uint8_t - unsigned exact width integer with 8 bits across all implementations. positive only
+    uint32_t - unsigned exact width integer with 32 bits. positive only
+    int32_t - signed exact width integer with 32 bits can be negative or positive
+    uint16_t - unsigned exact width ingeter with 16 bits must be positive
+3.  8, 32, 32, 16
+4.  0x42 0x4D 
+5. bfSize = biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)
+   bfSize is the size of the whole bmp file, which includes the headerfiles, while biSize is the size of the BITMAPINFOHEADER header file. biSize is constant and it equals 40 bytes 
+6.  If biHeight is negative, the bitmap is a top-down DIB with the origin at the upper left corner.
+7.  biBitCount 
+8.  If the files do not exist
+9.  Only reading one element at a time
+10. So it is a multiple of 4
+11. The C library function int fseek(FILE *stream, long int offset, int whence) sets the file position of the stream to the given offset 	
+12. TODOCurrent position of the file pointer
