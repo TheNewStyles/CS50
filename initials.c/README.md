@@ -1,0 +1,1 @@
+From problem set 2 of CS50. Implement a program given a person’s name, prints a person’s initials. Must take into account blank spaces before, between, and after name. Must print all initials to uppercase. This program uses <cs50.h>.
