@@ -2,11 +2,12 @@ import cs50, sys
 
 def main():
     height = get_arg()
-    draw_pyramids(height)
+    if not height is None:
+        draw_pyramids(height)
     
 def get_arg():
     if len(sys.argv) != 2 or int(sys.argv[1]) > 23 or int(sys.argv[1]) < 0:
-        return;
+        return
     return int(sys.argv[1])
     
 def draw_pyramids(pyH):
