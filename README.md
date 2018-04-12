@@ -1,1 +1,1 @@
-Moving all CS50 into a single repo
+#My solutions for Harvards CS50 Online Introduction to Computer Science course.  
