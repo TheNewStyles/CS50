@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import helpers
+from analyzer import Analyzer
+from termcolor import colored
+
+def main():
+
+    # ensure proper usage
+    if len(sys.argv) != 2:
+        sys.exit("Usage: ./tweets @handle")
+    
+    positives = os.path.join(sys.path[0], "positive-words.txt")
+    negatives = os.path.join(sys.path[0], "negative-words.txt")    
+    
+    tweets = helpers.get_user_timeline(sys.argv[1], 50)
+    analyzer = Analyzer(positives, negatives)
+    
+    for i in range(len(tweets)):
+        score = analyzer.analyze(tweets[i])
+        if score > 0.0:
+            print(colored(tweets[i], "green"), score)
+        elif score < 0.0:
+            print(colored(tweets[i], "red"), score)
+        else:
+            print(colored(tweets[i], "yellow"), score)
+        
+if __name__ == "__main__":
+    main()
