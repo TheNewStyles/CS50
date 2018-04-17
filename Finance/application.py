@@ -33,7 +33,18 @@ db = SQL("sqlite:///finance.db")
 @app.route("/")
 @login_required
 def index():
-    return apology("TODO")
+    
+    stocks = db.execute("SELECT * FROM users WHERE id=:id", id=session["user_id"])
+    print(stocks)
+    name = stocks[0]["username"]
+    #which stocks
+    #number of stocks owned
+    #current price of stocks
+    #total value of holdings
+    #user cash balance
+    #total value of holdings plus cash balance
+    
+    return render_template("index.html", name=name)
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
