@@ -33,18 +33,42 @@ db = SQL("sqlite:///finance.db")
 @app.route("/")
 @login_required
 def index():
+    if request.method == "POST":
+        id = session["user_id"]
+        user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
+        name = user[0]["username"]
+        cashBalance = user[0]["cash"]
+        stocksAr = []
+        totalStockValue = 0;
+        
+        try:
+            stocks = db.execute("SELECT stock, sum(shares) as total_shares, AVG(price) as price FROM transactions WHERE userid=:id GROUP BY stock ORDER BY stock", id=id)
+        except:
+            return apology("This user owns no stocks")
+        
+        for i in stocks:
+            print(i)
+            #currentPrice = lookup(i["stock"]) - Price lookup taking to long because yahoo finance is deprecated
+            #if currentPrice == None:
+            currentPrice = i["price"]
+            #else:
+                #currentPrice = currentPrice.get("price")
     
-    stocks = db.execute("SELECT * FROM users WHERE id=:id", id=session["user_id"])
-    print(stocks)
-    name = stocks[0]["username"]
-    #which stocks
-    #number of stocks owned
-    #current price of stocks
-    #total value of holdings
-    #user cash balance
-    #total value of holdings plus cash balance
-    
-    return render_template("index.html", name=name)
+            stockObject = {
+                "symbol": i["stock"],
+                "totalShares": i["total_shares"],
+                "currentPrice": currentPrice,
+                "totalValue": currentPrice * i["total_shares"]
+            }
+            
+            totalStockValue += stockObject["totalValue"]
+            stocksAr.append(stockObject)
+        
+        totalWorth = totalStockValue + cashBalance
+
+        return render_template("index.html", name=name, stocks=stocksAr, cash=cashBalance, total=totalWorth)
+    else:
+        return render_template("index.html")
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
