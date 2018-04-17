@@ -50,28 +50,30 @@ def buy():
         stock = lookup(request.form.get("symbol"))
         if stock == None:
             return apology("Could not find stock")
-            
-        stockPrice = stock.get("price")
-        totalPrice = stockPrice * int(request.form.get("shares"));
-        
-        cash =  db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
-        cash = int(cash[0]["cash"])
 
+        shares = int(request.form.get("shares"))
+        stockPrice = stock.get("price")
+        stockName = stock.get("name")
+        totalPrice = stockPrice * shares;
+        purchaseTime = datetime.datetime.now()
+        
+        try:
+            cash =  db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+        except:
+            apology("sql exception")
+            
+        cash = int(cash[0]["cash"])
         if totalPrice > cash:
             return apology("Too broke")
-        
-        remaining = cash - totalPrice
-        print(remaining)
-        db.execute("UPDATE users SET cash = :remaining WHERE id = :id", remaining=remaining, id=session["user_id"])
+        remaining = round(cash,2) - round(totalPrice,2)
 
-        #Add new transcations table - who bought what at what price and when
-            #Transact id - PK
-            #user - FK?
-            #stock
-            #price
-            #time
-
-        
+        try:
+            db.execute("UPDATE users SET cash = :remaining WHERE id = :id", remaining=remaining, id=session["user_id"])
+            db.execute("INSERT INTO transactions (userid, stock, price, shares, purchaseprice, time) VALUES (:userid, :stock, :price, :shares, :purchaseprice, :time)", 
+                    userid=session["user_id"], stock=stockName, price=stockPrice, shares=shares, purchaseprice=totalPrice, time=purchaseTime)
+        except:
+            apology("sql expection")
+    
         return render_template("buy.html")
     else:
         return render_template("buy.html")
