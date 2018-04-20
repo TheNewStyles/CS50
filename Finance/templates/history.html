@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+    <h1>{{ name }}</h1>
+
+    <ul class="list-unstyled">
+      {% for stock in stocks %}
+        <li>
+         <b>Stock: </b>  {{ stock.stock }} 
+         <b>Shares: </b> {{ stock.shares }}
+         <b>Price: </b> {{ stock.price }}
+         <b>Purchase Price: </b> {{ stock.purchaseprice }}
+         <b>Time: </b> {{ stock.time }}
+        </li>
+      {% endfor %}
+    </ul>
+
+{% endblock %}
+
