@@ -5,6 +5,7 @@ from passlib.apps import custom_app_context as pwd_context
 from tempfile import mkdtemp
 
 from helpers import *
+import datetime
 
 # configure application
 app = Flask(__name__)
@@ -30,45 +31,26 @@ Session(app)
 # configure CS50 Library to use SQLite database
 db = SQL("sqlite:///finance.db")
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    if request.method == "POST":
-        id = session["user_id"]
-        user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
-        name = user[0]["username"]
-        cashBalance = user[0]["cash"]
-        stocksAr = []
-        totalStockValue = 0;
-        
-        try:
-            stocks = db.execute("SELECT stock, sum(shares) as total_shares, AVG(price) as price FROM transactions WHERE userid=:id GROUP BY stock ORDER BY stock", id=id)
-        except:
-            return apology("This user owns no stocks")
-        
-        for i in stocks:
-            print(i)
-            #currentPrice = lookup(i["stock"]) - Price lookup taking to long because yahoo finance is deprecated
-            #if currentPrice == None:
-            currentPrice = i["price"]
-            #else:
-                #currentPrice = currentPrice.get("price")
+    id = session["user_id"]
+    user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
+    name = user[0]["username"]
+    cashBalance = round(user[0]["cash"],2)
+    stocksAr = []
+    totalStockValue = 0;
     
-            stockObject = {
-                "symbol": i["stock"],
-                "totalShares": i["total_shares"],
-                "currentPrice": currentPrice,
-                "totalValue": currentPrice * i["total_shares"]
-            }
-            
-            totalStockValue += stockObject["totalValue"]
-            stocksAr.append(stockObject)
-        
-        totalWorth = totalStockValue + cashBalance
+    try:
+        stocks = db.execute("SELECT stock, sum(shares) as total_shares, AVG(price) as price FROM transactions WHERE userid=:id GROUP BY stock ORDER BY stock", id=id)
+    except:
+        return apology("This user owns no stocks")
+    
+    stocksAr = getStocks(id)
+    totalStockValue = getStockValue(id, stocksAr)
+    totalWorth = round(totalStockValue + cashBalance, 2)
 
-        return render_template("index.html", name=name, stocks=stocksAr, cash=cashBalance, total=totalWorth)
-    else:
-        return render_template("index.html")
+    return render_template("index.html", name= "Username: " + name, stocks=stocksAr, cash= "Cash balance: " + str(cashBalance),  total= "Total value: " + str(totalWorth))
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
@@ -87,7 +69,7 @@ def buy():
             return apology("Could not find stock")
 
         shares = int(request.form.get("shares"))
-        stockPrice = stock.get("price")
+        stockPrice = round(stock.get("price"), 2)
         stockName = stock.get("name")
         totalPrice = stockPrice * shares;
         purchaseTime = datetime.datetime.now()
@@ -113,13 +95,33 @@ def buy():
     else:
         return render_template("buy.html")
 
-
+@app.route("/cash", methods=["GET", "POST"])
+def cash():
+    #add cash to account
+    if request.method == "POST":
+        if not request.form.get("cash"):
+            return apology("must provide amount")
+        id = session["user_id"]
+        user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
+        currentCash = user[0]["cash"]
+        addedCash = int(request.form.get("cash"))
+        cash = round(currentCash + addedCash,2)
+        db.execute("UPDATE users SET cash = :total WHERE id = :id", total=cash, id=session["user_id"])
+        
+        return render_template("cash.html", message= str(cash) + " is your new balance")
+    
+    return render_template("cash.html")
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions."""
-    return apology("TODO")
+    id = session["user_id"]
+    user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
+    name = user[0]["username"]
+    history = getHistory(id)
+    
+    return render_template("history.html", name=name, stocks=history)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -207,4 +209,100 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock."""
-    return apology("TODO")
+    if request.method == "POST":
+        id = session["user_id"]
+        user = db.execute("SELECT * FROM users WHERE id=:id", id=id)
+        name = user[0]["username"]
+        cashBalance = user[0]["cash"]
+        stocksAr = getStocks(id)
+        hasStock = False
+        hasEnoughStock = False
+        stockToSell = {}
+        
+        if not request.form.get("symbol"):
+            return apology("must provide stock symbol")
+        
+        if not request.form.get("shares"):
+            return apology("must provide shares amount")
+            
+        for i in stocksAr:
+            if i["symbol"] == request.form.get("symbol").upper():
+                hasStock = True
+                if i["totalShares"] >= int(request.form.get("shares")):
+                    hasEnoughStock = True
+                    stockToSell = i
+                    
+        if hasStock and hasEnoughStock:
+            print("has stock and shares")
+            print(stockToSell)
+            shares = int(request.form.get("shares")) * -1
+            price = stockToSell["currentPrice"]
+            total = cashBalance + (round(shares * price, 2))
+            sellTime = datetime.datetime.now()
+            symbol = stockToSell["symbol"]
+            
+            #add cash to users table  
+            db.execute("UPDATE users SET cash = :total WHERE id = :id", total=total, id=session["user_id"])
+            #add transaction with negative shares for that user
+            db.execute("INSERT INTO transactions (userid, stock, price, shares, purchaseprice, time) VALUES (:userid, :stock, :price, :shares, :sellprice, :time)", 
+                    userid=session["user_id"], stock=symbol, price=price, shares=shares, sellprice=total, time=sellTime)
+    
+            return render_template("sell.html", message="Stock sold successfully")
+        else:
+            apology("Incorrect stock symbol or user does not own enough")
+
+    else:
+        return(render_template("sell.html"))
+    
+def getStocks(id):
+    stocksAr = []
+    try:
+        stocks = db.execute("SELECT stock, sum(shares) as total_shares, AVG(price) as price FROM transactions WHERE userid=:id GROUP BY stock ORDER BY stock", id=id)
+    except:
+        return apology("This user owns no stocks")
+    
+    for i in stocks:
+        #currentPrice = lookup(i["stock"]) - Price lookup taking to long because yahoo finance is deprecated
+        #if currentPrice == None:
+        currentPrice = i["price"]
+        #else:
+            #currentPrice = currentPrice.get("price")
+
+        stockObject = {
+            "symbol": i["stock"],
+            "totalShares": i["total_shares"],
+            "currentPrice": round(currentPrice,2),
+            "totalValue": round(currentPrice * i["total_shares"],2)
+        }
+        
+        stocksAr.append(stockObject)
+    return stocksAr
+
+def getHistory(id):
+    stocksAr = []
+    try:
+        stocks = db.execute("SELECT stock, shares, price, purchaseprice, time FROM transactions WHERE userid=:id ORDER BY time", id=id)
+    except:
+        return apology("This user owns no stocks")
+    
+    for i in stocks:
+        currentPrice = i["price"]
+
+        stockObject = {
+            "stock": i["stock"],
+            "shares": i["shares"],
+            "price": round(i["price"],2),
+            "purchaseprice": round(currentPrice * i["purchaseprice"],2),
+            "time": i["time"]
+        }
+        
+        stocksAr.append(stockObject)
+    return stocksAr
+    
+def getStockValue(id, stocksAr):
+    totalStockValue = 0
+    for i in stocksAr:
+        print(i)
+        totalStockValue += i["totalValue"]
+        print(totalStockValue)
+    return totalStockValue
