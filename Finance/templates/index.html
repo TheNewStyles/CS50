@@ -1,28 +1,24 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Buy
+    Index
 {% endblock %}
 
 {% block main %}
     <h1>{{ name }}</h1>
-    <h3> Cash on hand: {{ cash }} </h3>
-    <h3> Total net worth: {{ total }} </h3>
-    <form action="{{ url_for('index') }}" method="post" >
-        <ul>
-          {% for stock in stocks %}
-            <li>
-             <b>Stock:</b>  {{ stock.symbol }} 
-             <b>Shares:</b> {{ stock.totalShares }}
-             <b>Current stock Price:</b> {{ stock.currentPrice }}
-             <b>Total Value of your shares:</b> {{ stock.totalValue }}
-            </li>
-          {% endfor %}
-        </ul>
-        
-        <div>
-            <button class="btn btn-default" type="submit">Get user data</button>
-        </div>
-    </form>
+    <h3>{{ cash }} </h3>
+    <h3>{{ total }} </h3>
+ 
+    <ul class="list-unstyled">
+      {% for stock in stocks %}
+        <li>
+         <b>Stock:</b>  {{ stock.symbol }} 
+         <b>Shares:</b> {{ stock.totalShares }}
+         <b>Current stock Price:</b> {{ stock.currentPrice }}
+         <b>Total Value of your shares:</b> {{ stock.totalValue }}
+        </li>
+      {% endfor %}
+    </ul>
+
 
 {% endblock %}
