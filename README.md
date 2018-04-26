@@ -1,2 +1,3 @@
 <h3> My solutions for Harvards CS50 Online Introduction to Computer Science course. </h3>
-     Solved in c and python
+<p> Projects built in C, Python, Javascript, AJAX, and Flask</p>
+<p> All solutions are my own </p>
